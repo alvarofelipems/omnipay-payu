@@ -1,5 +1,5 @@
 {
-    "name": "omnipay/payu",
+    "name": "alvarofelipems/payu",
     "type": "library",
     "description": "PayU driver for the Omnipay payment processing library",
     "keywords": [
@@ -11,16 +11,12 @@
         "payu",
         "purchase"
     ],
-    "homepage": "https://github.com/efesaid/omnipay-payu",
+    "homepage": "https://github.com/alvarofelipems/omnipay-payu",
     "license": "MIT",
     "authors": [
         {
-            "name": "Said İmamoğlu",
-            "email": "said.imamoglu@biberltd.com"
-        },
-        {
-            "name": "Omnipay Contributors",
-            "homepage": "https://github.com/efesaid/omnipay-payu/contributors"
+            "name": "Álvaro Felipe Mendes Soares",
+            "email": "alvarofelipems@gmail.com"
         }
     ],
     "autoload": {
