@@ -1,5 +1,5 @@
 <?php
-namespace Omnipay\PayU;
+namespace Alvarofelipems\PayU;
 
 use Omnipay\Common\AbstractGateway;
 use Omnipay\PayU\Message\PurchaseResponse;

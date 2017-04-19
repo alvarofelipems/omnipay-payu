@@ -1,5 +1,5 @@
 <?php
-namespace Omnipay\PayU\Message;
+namespace Alvarofelipems\PayU\Message;
 
 use Omnipay\Common\CreditCard;
 use Omnipay\Common\Item;
