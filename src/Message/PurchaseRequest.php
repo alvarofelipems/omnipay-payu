@@ -1,12 +1,11 @@
 <?php
-
 namespace Omnipay\PayU\Message;
 
 use Omnipay\Common\CreditCard;
 use Omnipay\Common\Item;
 use Omnipay\Common\Message\AbstractRequest;
 use Symfony\Component\HttpFoundation\Response;
-
+use Guzzle\Http\Exception\ServerErrorResponseException;
 /**
  * PayU Purchase Request
  */
@@ -16,10 +15,11 @@ class PurchaseRequest extends AbstractRequest
      * @var array
      */
     protected $endpoints = array(
-        'authorize' => 'https://secure.payu.com.tr/order/alu/v3',
-        'purchase' => 'https://secure.payu.com.tr/order/alu/v3',
-        'test' => 'http://secure.payu.com.tr/order/alu/v3',
+        'authorize' => 'https://api.payulatam.com/payments-api/4.0/service.cgi',
+        'purchase' => 'https://api.payulatam.com/payments-api/4.0/service.cgi',
+        'test' => 'https://sandbox.api.payulatam.com/payments-api/4.0/service.cgi',
     );
+    
     /**
      * @var array
      */
@@ -28,7 +28,32 @@ class PurchaseRequest extends AbstractRequest
         'PSPRT',
         'EHLIYET',
     );
-
+    
+    /**
+     * @return mixed
+     */
+    public function getLanguage()
+    {
+        return $this->getParameter('language');
+    }
+    
+    /**
+     * @param $value
+     * @return mixed
+     */
+    public function setLanguage($value)
+    {
+        return $this->setParameter('language', $value);
+    }
+    
+    /**
+     * @return mixed
+     */
+    public function setMerchantId($id)
+    {
+        return $this->setParameter('merchantId', $id);
+    }
+    
     /**
      * @return mixed
      */
@@ -36,16 +61,68 @@ class PurchaseRequest extends AbstractRequest
     {
         return $this->getParameter('merchantId');
     }
+    
+    /**
+     * @return mixed
+     */
+    public function setAccountId($id)
+    {
+        return $this->setParameter('accountId', $id);
+    }
+    
+    /**
+     * @return mixed
+     */
+    public function getAccountId()
+    {
+        return $this->getParameter('accountId');
+    }
+    
+    /**
+     * @param $value
+     * @return mixed
+     */
+    public function setApiLogin($apiLogin)
+    {
+        return $this->setParameter('apiLogin', $apiLogin);
+    }
+    
+    /**
+     * @return mixed
+     */
+    public function getApiLogin()
+    {
+        return $this->getParameter('apiLogin');
+    }
+    
+    /**
+     * @param $value
+     * @return mixed
+     */
+    public function setApiKey($apiKey)
+    {
+        return $this->setParameter('apiKey', $apiKey);
+    }
+    
+    /**
+     * @return mixed
+     */
+    public function getApiKey()
+    {
+        return $this->getParameter('apiKey');
+    }
 
     /**
      * @param $value
      * @return mixed
      */
-    public function setMerchantId($value)
+    public function setMerchant($id, $login, $key)
     {
-        return $this->setParameter('merchantId', $value);
+        $this->setParameter('merchantId', $id);
+        $this->setParameter('apiLogin', $login);
+        $this->setParameter('apiKey', $key);
     }
-
+    
     /**
      * @return mixed
      */
@@ -53,15 +130,25 @@ class PurchaseRequest extends AbstractRequest
     {
         return $this->getParameter('secretKey');
     }
-
+    
+    
     /**
      * @param $value
      * @return mixed
      */
-    public function setSecretKey($value)
+    public function setDniNumber($dniNumber)
     {
-        return $this->setParameter('secretKey', $value);
+        return $this->setParameter('dniNumber', $dniNumber);
     }
+    
+    /**
+     * @return mixed
+     */
+    public function getDniNumber()
+    {
+        return $this->getParameter('dniNumber');
+    }
+    
     /**
      * @param $endpoint
      * @return mixed
@@ -74,7 +161,7 @@ class PurchaseRequest extends AbstractRequest
     /**
      * @return mixed
      */
-    public function getIdentityNumber(){
+    public function getIdentityNumber() {
         return $this->getParameter('identityNumber');
     }
 
@@ -82,8 +169,23 @@ class PurchaseRequest extends AbstractRequest
      * @param $value
      * @return AbstractRequest
      */
-    public function setIdentityNumber($value){
+    public function setIdentityNumber($value) {
         return $this->setParameter('identityNumber',$value);
+    }
+
+    /**
+     * @return mixed
+     */
+    public function getTransactionDescription() {
+        return $this->getParameter('transactionDescription');
+    }
+
+    /**
+     * @param $value
+     * @return AbstractRequest
+     */
+    public function setTransactionDescription($transactionDescription) {
+        return $this->setParameter('transactionDescription', $transactionDescription);
     }
 
     /**
@@ -177,19 +279,92 @@ class PurchaseRequest extends AbstractRequest
      */
     public function getData()
     {
-        $data = array();
-        $data['MERCHANT'] = $this->getMerchantId();
-        $data['ORDER_REF'] = $this->getTransactionReference();
+        $card = $this->getCard();
+        
+        //Identificar bandeira
+        foreach ($card->getSupportedBrands() as $brand => $patern) {
+            if (preg_match ($patern, $card->getNumber())) {
+                $this->setPaymentMethod(strtoupper($brand));
+                break;
+            }
+        }
+        
+        $data = [
+            'language' => $this->getParameter('language'),
+            'command' => "SUBMIT_TRANSACTION",
+            'merchant' => [
+                'apiKey' => $this->getParameter('apiKey'),
+                'apiLogin' => $this->getParameter('apiLogin')
+            ],
+            'transaction' => [
+                'order' => [
+                    'accountId' => $this->getAccountId(),
+                    'referenceCode' => $this->getTransactionReference(),
+                    'description' => $this->getTransactionDescription(),
+                    'language' => $this->getParameter('language'),
+                    'signature' => 'AssinaturaMD5',
+                    'notifyUrl' => $this->getNotifyUrl(),
+                    'additionalValues' => [
+                        'TX_VALUE' => [
+                            'value' => $this->getAmount(),
+                            'currency' => $this->getCurrency(),
+                        ]
+                    ],
+                ],
+                //'payer' => [],
+                "extraParameters" => [
+                     "INSTALLMENTS_NUMBER" => $this->getInstallment()
+                ],
+                'type' => 'AUTHORIZATION_AND_CAPTURE',
+                'paymentMethod' => $this->getPaymentMethod(),
+                'paymentCountry' => 'BR',
+                'ipAddress' => $this->getClientIp(),
+            ],
+            'test' => $this->getTestMode(),
+        ];
+        
+        /** @var CreditCard $card */
+        // Billing Details
+        $data['transaction']['order']['buyer'] = [
+            'merchantBuyerId' => $this->getIdentityNumber(),
+            'fullName' => $card->getName(),
+            'emailAddress' => $card->getEmail(),
+            'contactPhone' => $card->getBillingPhone(),
+            'dniNumber' => $this->getParameter('dniNumber'),
+            "shippingAddress" => [
+               "street1" => $card->getBillingAddress1(),
+               "street2" => $card->getBillingAddress2(),
+               "city" => $card->getBillingCity(),
+               "state" => $card->getBillingState(),
+               "country" => $card->getBillingCountry(),
+               "postalCode" => $card->getBillingPostcode(),
+               "phone" => $card->getBillingPhone()
+            ]
+        ];
+
+        // Card Details
+        // If card is not valid then throw InvalidCreditCardException.
+        $card->validate();
+
+        $data['transaction']['creditCard'] = [
+             "number" => $card->getNumber(),
+             "securityCode" => $card->getCvv(),
+             "expirationDate" => $card->getExpiryYear().'/'.str_pad($card->getExpiryMonth(), 2, "0", STR_PAD_LEFT),
+             "name" => $card->getName()
+        ];
+        
+        /*
+        $data['BILL_COUNTRYCODE'] = $card->getBillingCountry();
+        $data['BILL_CITYPE'] = $this->getIdentityType();
+        $data['BILL_CINUMBER'] = $this->getIdentityNumber();
+        
         $data['ORDER_DATE'] = $this->getOrderDate();
-        $data['PAY_METHOD'] = $this->getPaymentMethod();
         $data['BACK_REF'] = $this->getReturnUrl();
         $data['ORDER_TIMEOUT'] = 1000;
-
-
+        */
         // Product Details
-        $items = $this->getItems();
+        /*$items = $this->getItems();
         if( !empty($items)){
-            /** @var Item $item */
             foreach ($this->getItems() as $key => $item) {
                 $data['ORDER_PNAME[' . $key . ']'] = $item->getName();
                 $data['ORDER_PCODE[' . $key . ']'] = $item->getName();
@@ -199,35 +374,12 @@ class PurchaseRequest extends AbstractRequest
                 $data['ORDER_PRICE_TYPE[' . $key . ']'] = $this->getParameter('orderPriceType'); // todo : cana sor
                 $data['ORDER_QTY[' . $key . ']'] = $item->getQuantity();
             }
-        }
-        /** @var CreditCard $card */
-        $card = $this->getCard();
-
-        // Billing Details
-        $data['BILL_LNAME'] = $card->getBillingLastName();
-        $data['BILL_FNAME'] = $card->getBillingFirstName();
-        $data['BILL_EMAIL'] = $card->getEmail();
-        $data['BILL_PHONE'] = $card->getBillingPhone();
-        $data['BILL_COUNTRYCODE'] = $card->getBillingCountry();
-        $data['BILL_CITYPE'] = $this->getIdentityType();
-        $data['BILL_CINUMBER'] = $this->getIdentityNumber();
-
-        // Card Details
-        // If card is not valid then throw InvalidCreditCardException.
-        $card->validate();
-        $data['CC_NUMBER'] = $card->getNumber();
-        $data['EXP_MONTH'] = $card->getExpiryMonth();
-        $data['EXP_YEAR'] = $card->getExpiryYear();
-        $data['CC_CVV'] = $card->getCvv();
-        $data['CC_OWNER'] = $card->getName();
+        }*/
 
         // Other Details
-        $data['CLIENT_IP'] = $this->getClientIp();
-        $data['SELECTED_INSTALLMENTS_NUMBER'] = $this->getInstallment();
-        $data['PRICES_CURRENCY'] = $this->getCurrency();
         // Order Hash
-        $data["ORDER_HASH"] = $this->generateHash($data);
-        $this->printCurlOutput($data);
+        //$data["ORDER_HASH"] = $this->generateHash($data);
+        //$this->printCurlOutput($data);
         return $data;
     }
 
@@ -245,12 +397,25 @@ class PurchaseRequest extends AbstractRequest
      */
     public function sendData($data)
     {
-        $httpRequest = $this->httpClient->post($this->getEndpoint('test'), null, http_build_query($data));
+        $data['transaction']['order']['signature'] = $this->generateHash($data);
+        
+        $httpRequest = $this->httpClient->post(
+            $this->getEndpoint('test'),
+            [
+                'Content-Type' => 'application/json; charset=utf-8',
+                'Accept' => 'application/json',
+                'Content-Length' => 'length'
+            ]
+        );
+        
+        $httpRequest->setBody(json_encode($data));
+        
         //$httpRequest->getCurlOptions()->set(CURLOPT_SSLVERSION, 6); // CURL_SSLVERSION_TLSv1_2 for libcurl < 7.35
         $response = $httpRequest->send();
-        $xmlData = json_decode(json_encode($response->xml()),1);
+        $jsonData = $response->json();
+        
         $data = array();
-        foreach($xmlData as $key => $value){
+        foreach($jsonData as $key => $value){
             $data[$key] = empty($value) ? null: $value;
         }
         return new PurchaseResponse($this,$data);
@@ -267,6 +432,14 @@ class PurchaseRequest extends AbstractRequest
      */
     public function generateHash(array $data)
     {
+        return md5(
+            $this->getParameter('apiKey').'~'.
+            $this->getParameter('merchantId').'~'.
+            $data['transaction']['order']['referenceCode'].'~'.
+            $data['transaction']['order']['additionalValues']['TX_VALUE']['value'].'~'.
+            $data['transaction']['order']['additionalValues']['TX_VALUE']['currency']
+        );
+        
         if ($this->getSecretKey()) {
             //begin HASH calculation
             ksort($data);

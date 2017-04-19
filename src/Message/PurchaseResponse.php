@@ -13,7 +13,7 @@ class PurchaseResponse extends AbstractResponse implements RedirectResponseInter
 {
     public function isRedirect()
     {
-        return $this->data->RETURN_CODE == '3DS_ENROLLED';
+        //return $this->data->RETURN_CODE == '3DS_ENROLLED';
     }
 
     public function isSuccessful()

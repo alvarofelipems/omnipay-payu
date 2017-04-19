@@ -2,8 +2,7 @@
 namespace Omnipay\PayU;
 
 use Omnipay\Common\AbstractGateway;
-use Omnipay\Payu\Message\PurchaseResponse;
-
+use Omnipay\PayU\Message\PurchaseResponse;
 
 /**
 
@@ -31,11 +30,95 @@ class Gateway extends AbstractGateway
     {
         return array(
             'merchantId' => '',
-            'secretKey' => '',
             'testMode' => true,
+            'language' => 'es',
+            'currence' => 'BRL',
         );
     }
-
+    
+    /**
+     * @return mixed
+     */
+    public function getLanguage()
+    {
+        return $this->getParameter('language');
+    }
+    
+    /**
+     * @param $value
+     * @return mixed
+     */
+    public function setLanguage($value)
+    {
+        return $this->setParameter('language', $value);
+    }
+    
+    /**
+     * @return mixed
+     */
+    public function setMerchantId($id)
+    {
+        return $this->setParameter('merchantId', $id);
+    }
+    
+    /**
+     * @return mixed
+     */
+    public function getMerchantId()
+    {
+        return $this->getParameter('merchantId');
+    }
+    
+    /**
+     * @return mixed
+     */
+    public function setAccountId($id)
+    {
+        return $this->setParameter('accountId', $id);
+    }
+    
+    /**
+     * @return mixed
+     */
+    public function getAccountId()
+    {
+        return $this->getParameter('accountId');
+    }
+    
+    /**
+     * @param $value
+     * @return mixed
+     */
+    public function setApiLogin($apiLogin)
+    {
+        return $this->setParameter('apiLogin', $apiLogin);
+    }
+    
+    /**
+     * @return mixed
+     */
+    public function getApiLogin()
+    {
+        return $this->getParameter('apiLogin');
+    }
+    
+    /**
+     * @param $value
+     * @return mixed
+     */
+    public function setApiKey($apiKey)
+    {
+        return $this->setParameter('apiKey', $apiKey);
+    }
+    
+    /**
+     * @return mixed
+     */
+    public function getApiKey()
+    {
+        return $this->getParameter('apiKey');
+    }
+    
     /**
      * @param array $parameters
      * @return \Omnipay\Common\Message\AbstractRequest
@@ -58,6 +141,7 @@ class Gateway extends AbstractGateway
      */
     public function purchase(array $parameters = array())
     {
+        $parameters = array_merge($this->getParameters(), $parameters);
         return $this->createRequest('\Omnipay\PayU\Message\PurchaseRequest', $parameters);
     }
 
