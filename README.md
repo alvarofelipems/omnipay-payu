@@ -2,8 +2,8 @@
 
 **PayU driver for the Omnipay payment processing library**
 
-[![Latest Stable Version](https://poser.pugx.org/omnipay/payu/version.png)](https://packagist.org/packages/omnipay/payu)
-[![Total Downloads](https://poser.pugx.org/omnipay/payu/d/total.png)](https://packagist.org/packages/omnipay/payu)
+[![Latest Stable Version](https://poser.pugx.org/alvarofelipems/payu/version.png)](https://packagist.org/packages/alvarofelipems/payu)
+[![Total Downloads](https://poser.pugx.org/alvarofelipems/payu/d/total.png)](https://packagist.org/packages/alvarofelipems/payu)
 
 [Omnipay](https://github.com/thephpleague/omnipay) is a framework agnostic, multi-gateway payment
 processing library for PHP 5.3+. This package implements PayU support for Omnipay.
@@ -16,7 +16,7 @@ to your `composer.json` file:
 ```json
 {
     "require": {
-        "omnipay/payu": "~2.0"
+        "alvarofelipems/payu": "~2.0"
     }
 }
 ```
